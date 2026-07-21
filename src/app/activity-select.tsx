@@ -1,38 +1,165 @@
-import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { AgroScreen } from '@/components/agro-screen';
+import { AgroScreen, AgroSurface } from '@/components/agro-screen';
 import { AppScreenHeader } from '@/components/app-screen-header';
-import { Radius, Spacing } from '@/constants/theme';
+import { Spacing } from '@/constants/theme';
+import { ActivityType } from '@/types/domain';
+import { WaterDropIcon } from '@/assets/svg/icons/water-drop';
+import { FertilizerIcon } from '@/assets/svg/icons/fertilizer';
+import { BugShieldIcon } from '@/assets/svg/icons/bug-shield';
 
-const TYPES = [
-  { label: 'Fertilizacion', color: '#1F8A3D', bg: '#EEF7EB' },
-  { label: 'Poda', color: '#2B9152', bg: '#EAF6EE' },
-  { label: 'Limpieza', color: '#237C3D', bg: '#E8F4EA' },
-  { label: 'Fumigacion', color: '#2D8650', bg: '#EBF5EF' },
-  { label: 'Cosecha', color: '#1E8D49', bg: '#EAF8EF' },
-  { label: 'Otra actividad', color: '#4A7C61', bg: '#ECF5F1' },
-];
-
+/**
+ * Pantalla de Seleccionar Tipo de Actividad
+ * Usuario elige qué tipo de actividad registrar
+ */
 export default function ActivitySelectScreen() {
+  const ACTIVITY_TYPES = [
+    {
+      type: ActivityType.IRRIGATION,
+      label: 'Riego',
+      description: 'Sistema de goteo o riego manual',
+      icon: <WaterDropIcon size={48} color="#3B82F6" />,
+      color: '#3B82F6',
+    },
+    {
+      type: ActivityType.FERTILIZATION,
+      label: 'Fertilización',
+      description: 'Aplicación de nutrientes',
+      icon: <FertilizerIcon size={48} color="#EAB308" />,
+      color: '#EAB308',
+    },
+    {
+      type: ActivityType.PEST_CONTROL,
+      label: 'Control de Plagas',
+      description: 'Fungicida o insecticida',
+      icon: <BugShieldIcon size={48} color="#EF4444" />,
+      color: '#EF4444',
+    },
+    {
+      type: ActivityType.WEEDING,
+      label: 'Deshierbe',
+      description: 'Eliminación de malezas',
+      emoji: '🌿',
+      color: '#10B981',
+    },
+    {
+      type: ActivityType.HARVESTING,
+      label: 'Cosecha',
+      description: 'Recolección de producto',
+      emoji: '🌾',
+      color: '#F59E0B',
+    },
+    {
+      type: ActivityType.PRUNING,
+      label: 'Poda',
+      description: 'Corte de ramas y mantenimiento',
+      emoji: '✂️',
+      color: '#8B5CF6',
+    },
+    {
+      type: ActivityType.SOIL_ANALYSIS,
+      label: 'Análisis de Suelo',
+      description: 'Pruebas de fertilidad y pH',
+      emoji: '🔬',
+      color: '#A16207',
+    },
+    {
+      type: ActivityType.TRANSPLANTING,
+      label: 'Trasplante',
+      description: 'Movimiento de plántulas',
+      emoji: '🪴',
+      color: '#059669',
+    },
+    {
+      type: ActivityType.PEST_MONITORING,
+      label: 'Monitoreo de Plagas',
+      description: 'Inspección sin aplicar pesticidas',
+      emoji: '🔍',
+      color: '#7C2D12',
+    },
+    {
+      type: ActivityType.CROP_INSPECTION,
+      label: 'Inspección de Cultivos',
+      description: 'Revisión general de salud',
+      emoji: '👁️',
+      color: '#4F46E5',
+    },
+    {
+      type: ActivityType.PACKING,
+      label: 'Empacado',
+      description: 'Preparación post-cosecha',
+      emoji: '📦',
+      color: '#DC2626',
+    },
+    {
+      type: ActivityType.FUNGICIDE_APPLICATION,
+      label: 'Aplicación Fungicida',
+      description: 'Tratamiento antifúngico',
+      emoji: '💉',
+      color: '#E11D48',
+    },
+    {
+      type: ActivityType.DISINFECTION,
+      label: 'Desinfección',
+      description: 'Limpieza de herramientas',
+      emoji: '🧼',
+      color: '#0891B2',
+    },
+    {
+      type: ActivityType.IRRIGATION_MAINTENANCE,
+      label: 'Mantenimiento de Riego',
+      description: 'Limpieza de tuberías',
+      emoji: '🔧',
+      color: '#0369A1',
+    },
+  ];
+
+  const handleSelectType = (type: ActivityType) => {
+    router.push({
+      pathname: '/activity-register',
+      params: { type },
+    });
+  };
+
   return (
     <AgroScreen>
-      <AppScreenHeader title="Seleccionar actividad" subtitle="Elige el tipo para continuar con el registro." />
+      <AppScreenHeader
+        title="Nueva Actividad"
+        subtitle="Selecciona el tipo de actividad a registrar"
+      />
 
-      <LinearGradient colors={['rgba(82,255,148,0.22)', 'rgba(11,25,18,0.92)']} style={styles.heroCard}>
-        <Text style={styles.heroTitle}>Registro rapido</Text>
-        <Text style={styles.heroText}>Selecciona el tipo de actividad para completar el formulario.</Text>
-      </LinearGradient>
+      {/* Info Card */}
+      <View style={[AgroSurface.card, styles.infoCard]}>
+        <Text style={styles.infoEmoji}>📋</Text>
+        <Text style={styles.infoText}>
+          Registra cada actividad en tus lotes para llevar un control completo
+        </Text>
+      </View>
 
+      {/* Activity Types Grid */}
       <View style={styles.grid}>
-        {TYPES.map((item) => (
+        {ACTIVITY_TYPES.map((item) => (
           <Pressable
-            key={item.label}
-            style={[styles.optionCard, { borderColor: item.color + '55', backgroundColor: 'rgba(255,255,255,0.04)' }]}
-            onPress={() => router.push('/activity-register')}>
-            <View style={[styles.optionDot, { backgroundColor: item.color }]} />
-            <Text style={styles.optionText}>{item.label}</Text>
+            key={item.type}
+            style={[AgroSurface.card, styles.typeCard]}
+            onPress={() => handleSelectType(item.type)}
+          >
+            <View
+              style={[
+                styles.iconCircle,
+                { borderColor: item.color + '40', backgroundColor: item.color + '15' },
+              ]}
+            >
+              {item.icon ? item.icon : <Text style={{ fontSize: 30 }}>{item.emoji}</Text>}
+            </View>
+
+            <Text style={styles.typeLabel}>{item.label}</Text>
+            <Text style={styles.typeDescription}>{item.description}</Text>
+
+            <View style={styles.chevronContainer}>
+              <Text style={[styles.chevron, { color: item.color }]}>›</Text>
+            </View>
           </Pressable>
         ))}
       </View>
@@ -41,47 +168,71 @@ export default function ActivitySelectScreen() {
 }
 
 const styles = StyleSheet.create({
+  infoCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+    padding: Spacing.three,
+    marginBottom: Spacing.two,
+  },
+
+  infoEmoji: {
+    fontSize: 28,
+  },
+
+  infoText: {
+    flex: 1,
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.7)',
+    lineHeight: 18,
+  },
+
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    justifyContent: 'space-between',
     gap: Spacing.two,
   },
-  heroCard: {
-    borderRadius: Radius.xl,
-    padding: Spacing.three,
-    borderWidth: 1,
-    borderColor: 'rgba(82,255,148,0.14)',
-  },
-  heroTitle: {
-    color: '#FFFFFF',
-    fontSize: 20,
-    fontWeight: '800',
-  },
-  heroText: {
-    marginTop: 4,
-    color: 'rgba(255,255,255,0.92)',
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  optionCard: {
+
+  typeCard: {
     width: '48%',
-    minHeight: 100,
-    borderRadius: Radius.xl,
-    borderWidth: 1.5,
+    padding: Spacing.three,
+    gap: Spacing.two,
+    alignItems: 'center',
+    position: 'relative',
+  },
+
+  iconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: Spacing.two,
-    gap: Spacing.one,
+    borderWidth: 2,
   },
-  optionDot: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-  },
-  optionText: {
-    color: '#FFFFFF',
-    fontSize: 13,
+
+  typeLabel: {
+    fontSize: 14,
     fontWeight: '700',
+    color: '#FFFFFF',
     textAlign: 'center',
+  },
+
+  typeDescription: {
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.55)',
+    textAlign: 'center',
+    lineHeight: 15,
+  },
+
+  chevronContainer: {
+    position: 'absolute',
+    top: Spacing.two,
+    right: Spacing.two,
+  },
+
+  chevron: {
+    fontSize: 20,
+    fontWeight: '800',
   },
 });

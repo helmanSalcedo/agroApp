@@ -1,16 +1,8 @@
 import { Redirect, Tabs } from 'expo-router';
-import { Text } from 'react-native';
 
 import { Radius } from '@/constants/theme';
 import { useAuth } from '@/context/auth-context';
-
-const TAB_ICONS: Record<string, string> = {
-  index: '🏠',
-  explore: '🌿',
-  activities: '🧾',
-  expenses: '💰',
-  profile: '👤',
-};
+import { HomeIcon, FarmIcon, ActivityIcon, ExpenseIcon, ProfileIcon } from '@/components/tab-icons';
 
 export default function TabsLayout() {
   const { isReady, isAuthenticated } = useAuth();
@@ -48,12 +40,26 @@ export default function TabsLayout() {
           borderRadius: Radius.md,
           marginHorizontal: 2,
         },
-        tabBarIcon: ({ focused, color, size }) => (
-          <Text style={{ fontSize: focused ? size + 1 : size - 1, color }}>
-            {TAB_ICONS[route.name] ?? '•'}
-          </Text>
-        ),
-      })}>
+        tabBarIcon: ({ focused, color, size }) => {
+          const iconSize = focused ? size + 2 : size;
+
+          switch (route.name) {
+            case 'index':
+              return <HomeIcon size={iconSize} color={color} />;
+            case 'explore':
+              return <FarmIcon size={iconSize} color={color} />;
+            case 'activities':
+              return <ActivityIcon size={iconSize} color={color} />;
+            case 'expenses':
+              return <ExpenseIcon size={iconSize} color={color} />;
+            case 'profile':
+              return <ProfileIcon size={iconSize} color={color} />;
+            default:
+              return null;
+          }
+        },
+      })}
+    >
       <Tabs.Screen name="index" options={{ title: 'Inicio' }} />
       <Tabs.Screen name="explore" options={{ title: 'Fincas' }} />
       <Tabs.Screen name="activities" options={{ title: 'Actividades' }} />

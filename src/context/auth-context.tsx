@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, PropsWithChildren, useContext, useEffect, useMemo, useState } from 'react';
 
 type AuthUser = {
+  id: string;
   name: string;
   phone: string;
   email?: string;
@@ -80,6 +81,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
   const signIn = async ({ phone }: SignInInput) => {
     const nextUser: AuthUser = {
+      id: 'user_' + Date.now(),
       name: 'Usuario AgroSaaS',
       phone,
     };
@@ -94,6 +96,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
   const signUp = async ({ name, phone, email }: SignUpInput) => {
     const nextUser: AuthUser = {
+      id: 'user_' + Date.now(),
       name,
       phone,
       email,

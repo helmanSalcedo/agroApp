@@ -1,186 +1,356 @@
 import { router } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View, Pressable } from 'react-native';
 
-import { LandscapeHeroSvg, RingChartSvg } from '@/components/agro-graphics';
 import { AgroScreen, AgroSurface } from '@/components/agro-screen';
 import { AppScreenHeader } from '@/components/app-screen-header';
-import { PrimaryAction } from '@/components/primary-action';
-import { Radius, Spacing } from '@/constants/theme';
+import { Spacing } from '@/constants/theme';
+import { useFarmContext, useLotContext } from '@/context';
 
-const LOTS = [
-  { name: 'Lote Alto', crop: 'Cafe Catio', area: '2.1 ha' },
-  { name: 'Lote Bajo', crop: 'Cafe Rojo', area: '1.2 ha' },
-  { name: 'Lote Cafetal', crop: 'Cafe Catio', area: '1.9 ha' },
-];
-
+/**
+ * Pantalla de Detalle de Granja
+ * Muestra información completa de una granja y sus lotes
+ */
 export default function FarmDetailScreen() {
+  const { selectedFarmId, getFarmById } = useFarmContext();
+  const { getLotsByFarm } = useLotContext();
+
+  const farm = selectedFarmId ? getFarmById(selectedFarmId) : null;
+  const lots = farm ? getLotsByFarm(farm.id) : [];
+  const activeLots = lots.filter((lot) => lot.status === 'active');
+
+  if (!farm) {
+    return (
+      <AgroScreen>
+        <AppScreenHeader title="Granja" />
+        <Text style={styles.errorText}>No se encontró la granja</Text>
+      </AgroScreen>
+    );
+  }
+
   return (
     <AgroScreen>
       <AppScreenHeader
-        title="Finca El Mirador"
-        subtitle="Pitalito, Huila"
+        title={farm.name}
+        subtitle={farm.location}
         rightLabel="Editar"
-        onRightPress={() => router.push('./farm-edit')}
+        onRightPress={() => router.push('/farm-edit')}
       />
 
-      <View style={[AgroSurface.cardStrong, styles.headerCard]}>
-        <LandscapeHeroSvg />
-        <View style={styles.headerContent}>
-          <View style={styles.kpiRow}>
-            <Chip label="5.2 ha" />
-            <Chip label="3 lotes" />
-            <Chip label="120 arrobas" />
+      {/* Card Principal */}
+      <View style={[AgroSurface.cardStrong, styles.heroCard]}>
+        <View style={styles.headerTop}>
+          <View style={styles.iconCircle}>
+            <Text style={styles.headerEmoji}>🌾</Text>
           </View>
-          <View style={styles.productionRow}>
-            <View>
-              <Text style={styles.productionLabel}>Productividad estimada</Text>
-              <Text style={styles.productionValue}>85%</Text>
-            </View>
-            <RingChartSvg pct={85} />
+
+          <View style={styles.headerInfo}>
+            <Text style={styles.headerLabel}>Área Total</Text>
+            <Text style={styles.headerValue}>{farm.totalArea} hectáreas</Text>
           </View>
+        </View>
+
+        {/* Estadísticas rápidas */}
+        <View style={styles.statsRow}>
+          <StatCard
+            label="Lotes Activos"
+            value={activeLots.length.toString()}
+            color="#22C55E"
+          />
+          <StatCard
+            label="Total de Lotes"
+            value={lots.length.toString()}
+            color="#3B82F6"
+          />
+          <StatCard
+            label="Desde"
+            value={
+              farm.createdAt
+                ? new Date(farm.createdAt instanceof Date ? farm.createdAt : farm.createdAt as any).getFullYear().toString()
+                : 'N/A'
+            }
+            color="#F59E0B"
+          />
         </View>
       </View>
 
-      <View style={[AgroSurface.card, styles.sectionCard]}>
+      {/* Lotes */}
+      <View style={styles.sectionContainer}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Mis lotes</Text>
+          <Text style={AgroSurface.sectionTitle}>Lotes ({lots.length})</Text>
           <Pressable onPress={() => router.push('/lots-list')}>
             <Text style={styles.linkText}>Ver todos</Text>
           </Pressable>
         </View>
 
-        {LOTS.map((lot) => (
-          <Pressable key={lot.name} style={styles.row} onPress={() => router.push('/lot-detail')}>
-            <View>
-              <Text style={styles.rowTitle}>{lot.name}</Text>
-              <Text style={styles.rowSub}>{lot.crop}</Text>
-            </View>
-            <Text style={styles.rowValue}>{lot.area}</Text>
-          </Pressable>
-        ))}
+        {lots.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyEmoji}>🌱</Text>
+            <Text style={styles.emptyText}>Sin lotes registrados</Text>
+            <Pressable
+              style={styles.createButton}
+              onPress={() => router.push('/lot-create')}
+            >
+              <Text style={styles.createButtonText}>Crear Lote</Text>
+            </Pressable>
+          </View>
+        ) : (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.lotsScroll}
+            scrollEnabled={lots.length > 2}
+          >
+            {lots.map((lot) => (
+              <Pressable
+                key={lot.id}
+                style={[AgroSurface.card, styles.lotCard]}
+                onPress={() => router.push(`/lot-detail?id=${lot.id}`)}
+              >
+                <Text style={styles.lotName}>{lot.name}</Text>
+                <Text style={styles.lotCrop}>{lot.crop}</Text>
+                <View style={styles.lotFooter}>
+                  <Text style={styles.lotArea}>{lot.area} ha</Text>
+                  <View
+                    style={[
+                      styles.statusBadge,
+                      { backgroundColor: getStatusColor(lot.status) },
+                    ]}
+                  >
+                    <Text style={styles.statusText}>{lot.status}</Text>
+                  </View>
+                </View>
+              </Pressable>
+            ))}
+          </ScrollView>
+        )}
       </View>
 
-      <View style={styles.actionsRow}>
-        <Pressable style={styles.secondaryButton} onPress={() => router.push('/lot-create')}>
-          <Text style={styles.secondaryButtonText}>Crear lote</Text>
+      {/* Acciones rápidas */}
+      <View style={styles.actionsContainer}>
+        <Pressable
+          style={[AgroSurface.primaryButton, styles.actionButton]}
+          onPress={() => router.push('/lot-create')}
+        >
+          <Text style={AgroSurface.primaryButtonText}>Nuevo Lote</Text>
         </Pressable>
-        <PrimaryAction label="Calendario" onPress={() => router.push('/calendar')} style={styles.primaryButtonWrap} />
-      </View>
 
-      <View style={styles.actionsRow}>
-        <Pressable style={styles.secondaryButton} onPress={() => router.push('./farm-edit')}>
-          <Text style={styles.secondaryButtonText}>Editar finca</Text>
+        <Pressable
+          style={[AgroSurface.secondaryButton, styles.actionButton]}
+          onPress={() => router.push('/farm-edit')}
+        >
+          <Text style={AgroSurface.secondaryButtonText}>Editar Granja</Text>
         </Pressable>
-        <PrimaryAction label="Produccion general" onPress={() => router.push('./production-general')} style={styles.primaryButtonWrap} />
       </View>
     </AgroScreen>
   );
 }
 
-function Chip({ label }: { label: string }) {
+interface StatCardProps {
+  label: string;
+  value: string;
+  color: string;
+}
+
+function StatCard({ label, value, color }: StatCardProps) {
   return (
-    <View style={styles.chip}>
-      <Text style={styles.chipText}>{label}</Text>
+    <View style={styles.statCard}>
+      <Text style={styles.statLabel}>{label}</Text>
+      <Text style={[styles.statValue, { color }]}>{value}</Text>
     </View>
   );
 }
 
+function getStatusColor(status: string): string {
+  switch (status) {
+    case 'active':
+      return 'rgba(34, 197, 94, 0.2)';
+    case 'planning':
+      return 'rgba(59, 130, 246, 0.2)';
+    case 'harvested':
+      return 'rgba(245, 158, 11, 0.2)';
+    default:
+      return 'rgba(107, 114, 128, 0.2)';
+  }
+}
+
 const styles = StyleSheet.create({
-  headerCard: {
-    overflow: 'hidden',
+  heroCard: {
+    padding: Spacing.four,
+    gap: Spacing.three,
   },
-  headerContent: {
-    padding: Spacing.three,
-    gap: Spacing.two,
-  },
-  kpiRow: {
+
+  headerTop: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.two,
-  },
-  productionRow: {
-    marginTop: Spacing.one,
-    paddingTop: Spacing.two,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.08)',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    gap: Spacing.three,
   },
-  productionLabel: {
-    color: 'rgba(255,255,255,0.62)',
-    fontSize: 13,
+
+  iconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: 'rgba(82,255,148,0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(82,255,148,0.25)',
+  },
+
+  headerEmoji: {
+    fontSize: 32,
+  },
+
+  headerInfo: {
+    flex: 1,
+    gap: 4,
+  },
+
+  headerLabel: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.6)',
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+
+  headerValue: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#52FF94',
+  },
+
+  statsRow: {
+    flexDirection: 'row',
+    gap: Spacing.two,
+  },
+
+  statCard: {
+    flex: 1,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 12,
+    padding: Spacing.two,
+    alignItems: 'center',
+    gap: 4,
+  },
+
+  statLabel: {
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.6)',
     fontWeight: '600',
   },
-  productionValue: {
-    marginTop: 2,
-    color: '#52FF94',
-    fontSize: 24,
+
+  statValue: {
+    fontSize: 18,
     fontWeight: '800',
   },
-  sectionCard: {
-    padding: Spacing.three,
+
+  sectionContainer: {
     gap: Spacing.two,
   },
+
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  sectionTitle: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '700',
-  },
+
   linkText: {
     color: '#52FF94',
-    fontSize: 13,
     fontWeight: '600',
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.08)',
-    paddingTop: Spacing.two,
-  },
-  rowTitle: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  rowSub: {
-    color: 'rgba(255,255,255,0.6)',
-    fontSize: 12,
-  },
-  rowValue: {
-    color: '#52FF94',
     fontSize: 13,
-    fontWeight: '700',
   },
-  actionsRow: {
-    flexDirection: 'row',
+
+  lotsScroll: {
     gap: Spacing.two,
+    paddingRight: Spacing.three,
   },
-  secondaryButton: {
-    flex: 1,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    backgroundColor: 'rgba(255,255,255,0.04)',
+
+  lotCard: {
+    width: 160,
+    padding: Spacing.two,
+    gap: Spacing.one,
   },
-  secondaryButtonText: {
-    color: '#52FF94',
+
+  lotName: {
     fontSize: 14,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+
+  lotCrop: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.65)',
+  },
+
+  lotFooter: {
+    marginTop: Spacing.one,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+
+  lotArea: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#52FF94',
+  },
+
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+
+  statusText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    textTransform: 'capitalize',
+  },
+
+  emptyState: {
+    alignItems: 'center',
+    gap: Spacing.two,
+    paddingVertical: Spacing.four,
+  },
+
+  emptyEmoji: {
+    fontSize: 48,
+  },
+
+  emptyText: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.65)',
+    fontWeight: '500',
+  },
+
+  createButton: {
+    marginTop: Spacing.one,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.one,
+    backgroundColor: 'rgba(82,255,148,0.15)',
+    borderRadius: 8,
+  },
+
+  createButtonText: {
+    color: '#52FF94',
     fontWeight: '600',
+    fontSize: 13,
   },
-  primaryButtonWrap: {
-    flex: 1,
+
+  actionsContainer: {
+    gap: Spacing.two,
+    marginTop: Spacing.two,
   },
-  chip: AgroSurface.chip,
-  chipText: AgroSurface.chipText,
+
+  actionButton: {
+    width: '100%',
+  },
+
+  errorText: {
+    color: '#EF4444',
+    fontSize: 16,
+    textAlign: 'center',
+    marginTop: Spacing.four,
+  },
 });

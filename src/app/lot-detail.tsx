@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { RingChartSvg, WeeklyBarsSvg } from '@/components/agro-graphics';
@@ -6,13 +6,19 @@ import { AgroScreen, AgroSurface } from '@/components/agro-screen';
 import { AppScreenHeader } from '@/components/app-screen-header';
 import { PrimaryAction } from '@/components/primary-action';
 import { Radius, Spacing } from '@/constants/theme';
+import { useLotContext } from '@/context';
 
 export default function LotDetailScreen() {
+  const params = useLocalSearchParams<{ id: string }>();
+  const { lots } = useLotContext();
+
+  const selectedLot = lots.find((l) => l.id === params.id);
+
   return (
     <AgroScreen>
       <AppScreenHeader
-        title="Lote Alto"
-        subtitle="Cafe Catio · 2.1 ha"
+        title={selectedLot?.name || 'Lote'}
+        subtitle={`${selectedLot?.crop || 'Cultivo'} · ${selectedLot?.area || 0} ha`}
         rightLabel="Editar"
         onRightPress={() => router.push('./lot-edit')}
       />
@@ -34,8 +40,20 @@ export default function LotDetailScreen() {
 
       <View style={[AgroSurface.card, styles.sectionCard]}>
         <Text style={styles.sectionTitle}>Acciones</Text>
-        <Pressable style={styles.rowButton} onPress={() => router.push('/activity-register')}>
+        <Pressable style={styles.rowButton} onPress={() => router.push('/activity-select')}>
           <Text style={styles.rowButtonText}>Registrar actividad</Text>
+        </Pressable>
+        <Pressable style={styles.rowButton} onPress={() => router.push('/expense-select')}>
+          <Text style={styles.rowButtonText}>Registrar gasto</Text>
+        </Pressable>
+        <Pressable
+          style={styles.rowButton}
+          onPress={() => router.push({
+            pathname: '/production-register',
+            params: { lotId: params.id }
+          })}
+        >
+          <Text style={styles.rowButtonText}>Registrar cosecha</Text>
         </Pressable>
         <Pressable style={styles.rowButton} onPress={() => router.push('/activity-detail')}>
           <Text style={styles.rowButtonText}>Ver ultima actividad</Text>
@@ -43,7 +61,7 @@ export default function LotDetailScreen() {
         <Pressable style={styles.rowButton} onPress={() => router.push('/calendar')}>
           <Text style={styles.rowButtonText}>Abrir calendario</Text>
         </Pressable>
-        <PrimaryAction label="Produccion por lote" onPress={() => router.push('./production-lot')} style={styles.rowButtonPrimary} />
+        <PrimaryAction label="Historial de cosechas" onPress={() => router.push('/production-list')} style={styles.rowButtonPrimary} />
       </View>
     </AgroScreen>
   );
